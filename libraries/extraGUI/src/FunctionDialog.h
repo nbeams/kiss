@@ -17,6 +17,8 @@ public:
     FunctionDialog(QWidget *parent = 0);
     ~FunctionDialog();
     QString* prototype();
+    QString bodyText();
+    void setIndent(QString indent);
     bool okWasPressed();
 
 protected:
@@ -26,6 +28,8 @@ private:
     Ui::FunctionDialog *m_ui;
 
     QString *m_prototype;
+    QString m_bodyText;
+    QString m_indent;
     bool m_okWasPressed;
     int m_numParam;
 

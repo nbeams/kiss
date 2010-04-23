@@ -105,23 +105,25 @@ void FunctionDialog::removeParam()
 }
 void FunctionDialog::okPressed()
 {
-    int i=0;
+    int i = 0; int j = 0;
+    bool startSpaceFound = true;
+    bool endSpaceFound = true;
 
     /*Show warning message if there is no function type or name*/
-    if(m_ui->funcType->text().isEmpty() && m_ui->funcName->text().isEmpty())
+    if(m_ui->funcType->text().remove(" ").isEmpty() && m_ui->funcName->text().remove(" ").isEmpty())
     {
         QMessageBox::warning(this, "Entry Error", "Please enter a function type and name.\n", QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
         m_okWasPressed = false;
         m_ui->funcType->setFocus();
     }
-    else if(m_ui->funcType->text().isEmpty())
+    else if(m_ui->funcType->text().remove(" ").isEmpty())
     {
         QMessageBox::warning(this, "Entry Error", "Please enter a function type.\n", QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
         m_okWasPressed = false;
         m_ui->funcType->setFocus();
     }
 
-    else if(m_ui->funcName->text().isEmpty())
+    else if(m_ui->funcName->text().remove(" ").isEmpty())
     {
         QMessageBox::warning(this, "Entry Error", "Please enter a function name.\n", QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
         m_okWasPressed = false;
@@ -156,6 +158,45 @@ void FunctionDialog::okPressed()
         else
             m_prototype->append(")");
 
+    /*Set bodyText*/
+    m_bodyText = m_ui->textEdit->toPlainText();
+
+    if(m_bodyText.simplified().remove(" ").isEmpty())  //no body text was entered in the dialog
+        m_bodyText = "{\n"+m_indent+"//Function definition goes here.\n}";
+
+    else
+    {
+        while(startSpaceFound)
+        {
+            if(m_bodyText.startsWith("\n"))
+
+                m_bodyText.remove(0,1); //clear extra spaces
+            else
+                startSpaceFound = false;
+        }
+        if(!m_bodyText.startsWith("{"))
+            m_bodyText.prepend("{\n"); //add curly brace if text does not already have it
+
+        while(endSpaceFound)
+        {
+            if(m_bodyText.endsWith("\n"))
+                m_bodyText.chop(1);  //clear excess spaces at the end
+            else
+                endSpaceFound = false;
+        }
+        if(!m_bodyText.endsWith("}"))
+            m_bodyText.append("\n}"); //add curly brace if text does not already have it
+        m_bodyText.append("\n"); //add space after curly brace for formatting
+
+        /*Add indentation to beginning of each line of text for format*/
+        while(j < m_bodyText.length()-3)
+        {
+            if(m_bodyText.at(j) == '\n')
+                m_bodyText.insert(j+1, m_indent);
+            j++;
+        }
+    }
+
     m_okWasPressed = true;
     accept(); //close dialog box
 
@@ -164,6 +205,7 @@ void FunctionDialog::okPressed()
     m_ui->funcName->clear();
     m_ui->enterParamType->clear();
     m_ui->enterParamName->clear();
+    m_ui->textEdit->clear();
     m_ui->paramTable->setRowCount(0);
     m_ui->funcType->setFocus();
     m_numParam = -1;
@@ -176,6 +218,7 @@ void FunctionDialog::cancelPressed()
     m_ui->funcName->clear();
     m_ui->enterParamType->clear();
     m_ui->enterParamName->clear();
+    m_ui->textEdit->clear();
     m_ui->paramTable->setRowCount(0);
     m_ui->funcType->setFocus();
     m_numParam = -1;
@@ -186,7 +229,15 @@ QString* FunctionDialog::prototype()
 {
     return m_prototype;
 }
+QString FunctionDialog::bodyText()
+{
+    return m_bodyText;
+}
 bool FunctionDialog::okWasPressed()
 {
     return m_okWasPressed;
+}
+void FunctionDialog::setIndent(QString indent)
+{
+    m_indent = indent;
 }

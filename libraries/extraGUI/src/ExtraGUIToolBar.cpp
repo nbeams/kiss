@@ -61,29 +61,35 @@ int ExtraGUIToolBar::modeIndex()
 
 void ExtraGUIToolBar::setInsertText(QString objectName)
 {
+    int i;
     /*Clear m_insertText*/
     m_insertText.clear();
+
+    QString m_indent;
+    /*Set string of space for indentations*/
+    for(i = 1; i <= m_currentSourceFile->tabWidth(); i++)
+        m_indent.append(" ");
 
     /*Set text to insert based on which button or label has been selected*/
     if(objectName == "conditionalIf" || objectName == "ifLabel")
     {
-        m_insertText.append("    if(boolean_expression)\n");
-        m_insertText.append("    { \n        //What will happen if this is true? \n    }\n");
+        m_insertText.append(m_indent+"if(boolean_expression)\n");
+        m_insertText.append(m_indent+"{ \n"+m_indent+m_indent+"//What will happen if this is true? \n"+m_indent+"}\n");
     }
     else if(objectName == "ifElse" || objectName == "ifElseLabel")
     {
-        m_insertText.append("    if(boolean_expression)\n");
-        m_insertText.append("    {\n        //What will happen if this is true? \n    }\n");
-        m_insertText.append("    else\n");
-        m_insertText.append("    {\n        //What will happen if this is false?\n    }\n");
+        m_insertText.append(m_indent+"if(boolean_expression)\n");
+        m_insertText.append(m_indent+"{\n"+m_indent+m_indent+"//What will happen if this is true? \n"+m_indent+"}\n");
+        m_insertText.append(m_indent+"else\n");
+        m_insertText.append(m_indent+"{\n"+m_indent+m_indent+"//What will happen if this is false?\n"+m_indent+"}\n");
     }
     else if(objectName == "conditionalSwitch" || objectName == "switchLabel")
     {
-        m_insertText.append("    switch(variable)\n    {\n");
-        m_insertText.append("        case a_value:\n");
-        m_insertText.append("        {\n            //What happens if variable == a_value?\n");
-        m_insertText.append("            break;\n        }    \n");
-        m_insertText.append("        //other cases go here\n    }\n");
+        m_insertText.append(m_indent+"switch(variable)\n"+m_indent+"{\n");
+        m_insertText.append(m_indent+m_indent+"case a_value:\n");
+        m_insertText.append(m_indent+m_indent+"{\n"+m_indent+m_indent+m_indent+"//What happens if variable == a_value?\n");
+        m_insertText.append(m_indent+m_indent+m_indent+"break;\n"+m_indent+m_indent+"}    \n");
+        m_insertText.append(m_indent+m_indent+"//other cases go here\n"+m_indent+"}\n");
     }
     else if(objectName == "loop" || objectName == "loopLabel")
     {
@@ -91,14 +97,14 @@ void ExtraGUIToolBar::setInsertText(QString objectName)
         {
             case 0:
             {
-                m_insertText.append("    for(variable = starting_value; variable <, <=, >=, or > ending_value; change_in_variable)\n");
-                m_insertText.append("    {\n        //What needs to be looped?\n    }\n");
+                m_insertText.append(m_indent+"for(variable = starting_value; variable <, <=, >=, or > ending_value; change_in_variable)\n");
+                m_insertText.append(m_indent+"{\n"+m_indent+m_indent+"//What needs to be looped?\n"+m_indent+"}\n");
                 break;
             }
             case 1:
             {
-                m_insertText.append("    while(boolean_expression)\n");
-                m_insertText.append("    {\n        //What code will be looped while this is true?\n    }\n");
+                m_insertText.append(m_indent+"while(boolean_expression)\n");
+                m_insertText.append(m_indent+"{\n"+m_indent+m_indent+"//What code will be looped while this is true?\n"+m_indent+"}\n");
                 break;
             }
         }
@@ -110,23 +116,28 @@ void ExtraGUIToolBar::setInsertText(QString objectName)
 
 void ExtraGUIToolBar::mousePressEvent(QMouseEvent *event)
 {
-    /*Ignore if there is no child at this spot*/
-    if(childAt(event->pos()) == 0)
-           event->ignore();
-    /*Ignore if click is on the line or on the mode label*/
-    else if(childAt(event->pos()) == m_ui->line)
-            event->ignore();
-    /*Ignore right clicks*/
-    else if(event->button() == Qt::RightButton)
-           event->ignore();
+    /*Ignore if there is no current source file...no use in having drag and drop if there's nothing to drop to!*/
+    if(!m_currentSourceFile)
+        return;
 
-    /*Begin drag if child is draggable*/
     else
     {
-        m_childAtPosition = qobject_cast<QLabel *>(childAt(event->pos()));
-        m_dragStartPosition = event->pos();
-        if(m_childAtPosition->objectName() != "templateLabel")
+        /*Ignore if there is no child at this spot*/
+        if(childAt(event->pos()) == 0)
+            event->ignore();
+        /*Ignore if click is on the line or on the mode label*/
+        else if(childAt(event->pos()) == m_ui->line)
+            event->ignore();
+        /*Ignore right clicks*/
+        else if(event->button() == Qt::RightButton)
+            event->ignore();
+
+        /*Begin drag if child is draggable*/
+        else
         {
+            m_childAtPosition = qobject_cast<QLabel *>(childAt(event->pos()));
+            m_dragStartPosition = event->pos();
+
             setInsertText(m_childAtPosition->objectName());
             m_dragText = new QMimeData;
             m_dragText->setText(m_insertText);
@@ -148,22 +159,23 @@ void ExtraGUIToolBar::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ExtraGUIToolBar::buttonClicked()
 {
-
-    /*Find which button has been clicked and emit the correct signal*/
-    QObject *senderObject = sender();
-    QPushButton *senderButton = qobject_cast<QPushButton *>(senderObject);
-
-    if(senderObject->objectName() == "function")
-        emit newFunction();
-
-    else //Regular text insertion button
-    {
-        setInsertText(senderButton->objectName());
-        if(!m_currentSourceFile)
+     if(!m_currentSourceFile)
             return;
-        else
-            m_currentSourceFile->insert(m_insertText);
-    }
+     else
+     {
+         /*Find which button has been clicked and emit the correct signal*/
+         QObject *senderObject = sender();
+         QPushButton *senderButton = qobject_cast<QPushButton *>(senderObject);
+
+         if(senderObject->objectName() == "function")
+             emit newFunction();
+
+         else //Regular text insertion button
+         {
+             setInsertText(senderButton->objectName());
+             m_currentSourceFile->insert(m_insertText);
+         }
+     }
 }
 
 void ExtraGUIToolBar::helpRequested()
@@ -178,21 +190,26 @@ void ExtraGUIToolBar::toolBarDropEvent(QDropEvent *event)
    int topLineShown = 0;
    int currentTextHeight = 0;
 
-   /*Check which line is currently at the top of the screen*/
-   topLineShown = m_currentSourceFile->firstVisibleLine();
+   if(!m_currentSourceFile)
+       return;
+   else
+   {
+       /*Check which line is currently at the top of the screen*/
+       topLineShown = m_currentSourceFile->firstVisibleLine();
 
-   /*Get Y position of drop event and convert to a line number.
+       /*Get Y position of drop event and convert to a line number.
      (This is to avoid problems when the drop is desired at a place currently without
         a line of text.) */
-   pos_y = event->pos().y();
-   currentTextHeight = m_currentSourceFile->textHeight(0); //what pixel size is the font currently being used?
-   m_insertLine = topLineShown + (pos_y - 15)/(currentTextHeight-1);  //ugly code to convert to line number
+       pos_y = event->pos().y();
+       currentTextHeight = m_currentSourceFile->textHeight(0); //what pixel size is the font currently being used?
+       m_insertLine = topLineShown + (pos_y - 15)/(currentTextHeight-1);  //ugly code to convert to line number
 
-   if(m_dropData->text() == "function")
-       emit newFunction();
+       if(m_dropData->text() == "function")
+           emit newFunction();
 
-   else
-       m_currentSourceFile->insertAt(m_dropData->text(), m_insertLine, 0);
+       else
+           m_currentSourceFile->insertAt(m_dropData->text(), m_insertLine, 0);
+   }
 }
 
 void ExtraGUIToolBar::newFunctionFromToolBar()
@@ -205,6 +222,14 @@ void ExtraGUIToolBar::newFunctionFromToolBar()
     int functionLine = 0;
     bool textFound = true;
 
+    QString m_indent; int i;
+    /*Set string of space for indentations and send it to the dialog for use with m_bodyText if needed*/
+    for(i = 1; i <= m_currentSourceFile->tabWidth(); i++)
+        m_indent.append(" ");
+
+    m_funcDialog->setIndent(m_indent);
+
+    /*Execute the New Function Dialog*/
     m_funcDialog->exec();
 
     if(!m_currentSourceFile)
@@ -263,16 +288,13 @@ void ExtraGUIToolBar::newFunctionFromToolBar()
 
              /*Insert function definition skeleton*/
             /*Find bottom of file to insert new function*/
-            while(!(m_currentSourceFile->text(functionLine).isEmpty()))
+           functionLine = line; //start from wherever the prototype was placed so it won't accidentally precede its prototype
+           while(!(m_currentSourceFile->text(functionLine).isEmpty()))
             {
                 functionLine++;
             }
-
-            m_currentSourceFile->setCursorPosition(functionLine+1, 0);
-
-            m_currentSourceFile->insert(m_funcDialog->bodyText());
-            m_currentSourceFile->insert("\n");
-            m_currentSourceFile->insert(*(m_funcDialog->prototype()));
+           /*Insert new function*/
+            m_currentSourceFile->insertAt("\n"+*(m_funcDialog->prototype())+"\n"+m_funcDialog->bodyText(), functionLine, 0);
 
         }
     }

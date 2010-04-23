@@ -57,14 +57,12 @@ public slots:
     void buttonClicked();
     void helpRequested();
     void toolBarDropEvent(QDropEvent *event);
-    void newFunctionFromToolBar(int typeOfCall);
-    void newFromTemplate();
+    void newFunctionFromToolBar();
     void toggleWindow();
 
 signals:
     void toolBarButtonClicked(QString insertText);
-    void newFunction(int typeOfCall);
-    void templateClicked();
+    void newFunction();
     void callOutsideAction();
 
 private:
